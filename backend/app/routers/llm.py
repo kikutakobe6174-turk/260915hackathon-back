@@ -9,6 +9,7 @@ from app.llm.prereq_suggest import generate_prereq_suggestions
 from app.llm.problem_draft import generate_problem_drafts
 from app.llm.sheet_draft import generate_sheet_draft
 from app.llm.trend_draft import generate_trend_draft
+from app.llm.trend_problem_draft import generate_trend_problem_drafts
 from app.models import AnswerSheet, Format, Test, Unit, User
 from app.schemas.llm import (
     PrereqSuggestRequest,
@@ -19,6 +20,8 @@ from app.schemas.llm import (
     SheetDraftResponse,
     TrendDraftRequest,
     TrendDraftResponse,
+    TrendProblemDraftRequest,
+    TrendProblemDraftResponse,
 )
 from app.services.lookup import get_or_404
 
@@ -88,6 +91,39 @@ def llm_problem_draft(
         raise AppError(code="LLM_ERROR", message=exc.message, status_code=502) from exc
 
     return ProblemDraftResponse(job_id=job.id, drafts=drafts)
+
+
+@router.post("/trend-problem-draft", response_model=TrendProblemDraftResponse)
+def llm_trend_problem_draft(
+    payload: TrendProblemDraftRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> TrendProblemDraftResponse:
+    get_or_404(db, User, payload.user_id, "ユーザー")
+
+    targets: list[tuple[Test, Unit]] = []
+    seen: set[tuple[int, int]] = set()
+    for t in payload.targets:
+        key = (t.test_id, t.unit_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        test = get_or_404(db, Test, t.test_id, "テスト")
+        unit = get_or_404(db, Unit, t.unit_id, "単元")
+        if unit.textbook_id != test.textbook_id:
+            raise AppError(
+                code="VALIDATION_ERROR",
+                message="このテストの教科書に属さない単元です",
+                status_code=400,
+            )
+        targets.append((test, unit))
+
+    try:
+        job, drafts = generate_trend_problem_drafts(db, settings, targets, payload.user_id)
+    except LlmFeatureError as exc:
+        raise AppError(code="LLM_ERROR", message=exc.message, status_code=502) from exc
+
+    return TrendProblemDraftResponse(job_id=job.id, drafts=drafts)
 
 
 @router.post("/sheet-draft", response_model=SheetDraftResponse)

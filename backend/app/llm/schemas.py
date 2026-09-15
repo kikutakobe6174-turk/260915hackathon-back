@@ -47,6 +47,22 @@ class ProblemDraftLlmOutput(BaseModel):
     drafts: list[ProblemDraftLlmItem]
 
 
+class TrendProblemDraftLlmItem(BaseModel):
+    test_id: int
+    unit_id: int
+    format_id: int
+    difficulty: int
+    body: str
+    answer: str
+    explanation: str
+    hints: list[ProblemDraftHintLlm]
+    prerequisite_unit_ids: list[int] = []
+
+
+class TrendProblemDraftLlmOutput(BaseModel):
+    drafts: list[TrendProblemDraftLlmItem]
+
+
 class SheetDraftLlmRow(BaseModel):
     item_no: str
     is_correct: bool
