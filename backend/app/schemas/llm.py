@@ -66,6 +66,33 @@ class ProblemDraftResponse(BaseModel):
     drafts: list[ProblemDraftItemOut]
 
 
+class TrendProblemDraftTarget(BaseModel):
+    test_id: int
+    unit_id: int
+
+
+class TrendProblemDraftRequest(BaseModel):
+    user_id: int
+    targets: list[TrendProblemDraftTarget] = Field(min_length=1)
+
+
+class TrendProblemDraftItemOut(BaseModel):
+    test_id: int
+    unit_id: int
+    format_id: int
+    difficulty: int
+    body: str
+    answer: str
+    explanation: str
+    hints: list[ProblemDraftHintOut]
+    prerequisite_unit_ids: list[int]
+
+
+class TrendProblemDraftResponse(BaseModel):
+    job_id: int
+    drafts: list[TrendProblemDraftItemOut]
+
+
 class SheetDraftRequest(BaseModel):
     answer_sheet_id: int
     user_id: int
